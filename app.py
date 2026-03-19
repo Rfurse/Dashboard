@@ -7,9 +7,12 @@ import time
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from config import COLORS, SECTOR_NAMES, SECTOR_ETFS, MODE_CONFIG
+
+mode = "Swing"
 from data_fetcher import fetch_all, _last_quote_error
 from scoring import compute_scores, generate_analysis
 
@@ -41,8 +44,19 @@ st.markdown(f"""
   }}
 
   /* Hide Streamlit chrome + sidebar collapse arrow */
-  #MainMenu, footer, header {{ visibility: hidden; }}
-  .block-container {{ padding: 0 1rem 2rem 1rem !important; }}
+  #MainMenu, footer, header {{ visibility: hidden; height: 0 !important; }}
+
+  /* Remove all top space — main content */
+  .block-container {{ padding: 0 1rem 2rem 1rem !important; margin-top: 0 !important; }}
+  [data-testid="stAppViewContainer"] > section:first-child {{ padding-top: 0 !important; }}
+  [data-testid="stAppViewBlockContainer"] {{ padding-top: 0 !important; margin-top: 0 !important; }}
+  .main > div:first-child {{ padding-top: 0 !important; }}
+  .stApp > header {{ display: none !important; }}
+
+  /* Remove all top space — sidebar */
+  [data-testid="stSidebar"] > div:first-child {{ padding-top: 0 !important; margin-top: 0 !important; }}
+  [data-testid="stSidebarContent"] {{ padding-top: 0.5rem !important; }}
+  section[data-testid="stSidebar"] {{ padding-top: 0 !important; }}
 
   /* Hide sidebar toggle button and its tooltip — covers all Streamlit versions */
   [data-testid="collapsedControl"],
@@ -456,9 +470,9 @@ def elapsed_str(dt: datetime) -> str:
 
 # Dynamic font scale — injected after session state is available
 if "font_scale" not in st.session_state:
-    st.session_state.font_scale = 100
+    st.session_state.font_scale = 75
 _scale = st.session_state.font_scale
-st.markdown(f"<style>html {{ font-size: {_scale}% !important; }}</style>", unsafe_allow_html=True)
+st.markdown(f"<style>[data-testid='stAppViewBlockContainer'] {{ font-size: {_scale}% !important; }}</style>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -466,41 +480,91 @@ st.markdown(f"<style>html {{ font-size: {_scale}% !important; }}</style>", unsaf
 # ─────────────────────────────────────────────────────────────────────────────
 
 if "font_scale" not in st.session_state:
-    st.session_state.font_scale = 100  # percent, 70–130
+    st.session_state.font_scale = 75  # percent, 70–130
 
 with st.sidebar:
-    mode = st.radio("TRADING MODE", ["Swing", "Day"], index=0)
+    # ── Logo graphic ─────────────────────────────────────────────────────────
+    st.markdown(f"""
+    <div style="padding:12px 8px 4px 8px;">
+      <svg viewBox="0 0 200 64" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+        <!-- Grid lines -->
+        <line x1="0" y1="16" x2="200" y2="16" stroke="{C['border']}" stroke-width="0.5"/>
+        <line x1="0" y1="32" x2="200" y2="32" stroke="{C['border']}" stroke-width="0.5"/>
+        <line x1="0" y1="48" x2="200" y2="48" stroke="{C['border']}" stroke-width="0.5"/>
+        <!-- Area fill under line -->
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="{C['green']}" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="{C['green']}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="0,52 20,48 38,44 55,46 70,36 85,30 100,34 112,22 125,18 138,24 150,14 162,20 175,10 190,6 200,8 200,64 0,64"
+          fill="url(#areaGrad)"/>
+        <!-- Price line -->
+        <polyline points="0,52 20,48 38,44 55,46 70,36 85,30 100,34 112,22 125,18 138,24 150,14 162,20 175,10 190,6 200,8"
+          fill="none" stroke="{C['green']}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+        <!-- Glowing end dot -->
+        <circle cx="200" cy="8" r="3.5" fill="{C['green']}" opacity="0.9"/>
+        <circle cx="200" cy="8" r="6" fill="{C['green']}" opacity="0.2"/>
+        <!-- Label -->
+        <text x="6" y="62" font-family="Share Tech Mono, Courier New, monospace"
+          font-size="9" fill="{C['subtext']}" letter-spacing="2">SHOULD I BE TRADING</text>
+      </svg>
+    </div>
+    """, unsafe_allow_html=True)
 
+    # ── LIVE status + last updated clock (moved to top) ──────────────────────
     st.markdown("---")
-    st.markdown(f"<div class='section-header'>FONT SIZE</div>", unsafe_allow_html=True)
-    fs_col1, fs_col2, fs_col3 = st.columns([1, 1, 1])
-    with fs_col1:
-        if st.button("A−", use_container_width=True, help="Decrease font size"):
-            st.session_state.font_scale = max(70, st.session_state.font_scale - 10)
-    with fs_col2:
-        st.markdown(f"<div style='text-align:center;padding-top:6px;font-size:.8rem;color:{C['blue']};'>{st.session_state.font_scale}%</div>", unsafe_allow_html=True)
-    with fs_col3:
-        if st.button("A+", use_container_width=True, help="Increase font size"):
-            st.session_state.font_scale = min(130, st.session_state.font_scale + 10)
-    if st.button("Reset", use_container_width=True):
-        st.session_state.font_scale = 100
-
-    st.markdown("---")
-    st.markdown(f"<div class='section-header'>SCORING WEIGHTS</div>", unsafe_allow_html=True)
-    from config import WEIGHTS
-    for cat, w in WEIGHTS.items():
-        st.markdown(f"<div style='font-size:.72rem;display:flex;justify-content:space-between;margin-bottom:4px;'><span>{cat.upper()}</span><span style='color:{C['blue']};'>{int(w*100)}%</span></div>", unsafe_allow_html=True)
-
-    st.markdown("---")
-    refresh_btn = st.button("↺  MANUAL REFRESH", use_container_width=True)
-    if refresh_btn:
-        st.cache_data.clear()
-        st.rerun()
-
-    # LIVE status + timestamp
-    st.markdown("---")
-    _elapsed = elapsed_str(st.session_state.get("last_fetched", datetime.utcnow()))
-    st.markdown(f"<div style='font-size:.72rem;'><span class='live-dot'></span><span style='color:{C['green']};'>LIVE</span><span style='color:{C['muted']};margin-left:8px;'>updated {_elapsed}</span></div>", unsafe_allow_html=True)
+    _fetched: datetime = st.session_state.get("last_fetched", datetime.utcnow())
+    _elapsed = elapsed_str(_fetched)
+    _ET = ZoneInfo("America/New_York")
+    _fetched_utc = _fetched.replace(tzinfo=timezone.utc)
+    _fetched_et  = _fetched_utc.astimezone(_ET)
+    _et_str = _fetched_et.strftime("%H:%M:%S %Z")
+    _et_date = _fetched_et.strftime("%b %d, %Y")
+    _live_col, _refresh_col = st.columns([3, 1])
+    with _live_col:
+        st.markdown(
+            f"<div style='font-size:.72rem;margin-bottom:6px;'>"
+            f"<span class='live-dot'></span>"
+            f"<span style='color:{C['green']};'>LIVE</span>"
+            f"<span style='color:{C['muted']};margin-left:8px;'>{_elapsed}</span>"
+            f"</div>"
+            f"<div style='font-size:.68rem;color:{C['subtext']};margin-bottom:2px;'>LAST UPDATED</div>"
+            f"<div style='font-size:.82rem;color:{C['text']};letter-spacing:1px;'>{_et_str}</div>"
+            f"<div style='font-size:.66rem;color:{C['muted']};'>Eastern Time Zone &nbsp;·&nbsp; {_et_date}</div>",
+            unsafe_allow_html=True,
+        )
+    with _refresh_col:
+        st.markdown("<div style='transform:scale(0.55);transform-origin:top right;margin-top:2px;'>", unsafe_allow_html=True)
+        refresh_btn = st.button("↺", use_container_width=True, help="Manual refresh")
+        st.markdown("</div>", unsafe_allow_html=True)
+        if refresh_btn:
+            st.cache_data.clear()
+            st.rerun()
+    import streamlit.components.v1 as _cv1
+    _cv1.html(f"""
+    <div id="tz-clock" style="font-family:'Share Tech Mono',monospace;font-size:.72rem;color:{C['subtext']};margin-top:6px;line-height:1.7;">
+      <div>NOW (ET) &nbsp;&nbsp;<span id="et-now" style="color:{C['text']};"></span></div>
+      <div>NOW (UTC) &nbsp;<span id="utc-now" style="color:{C['text']};"></span></div>
+    </div>
+    <script>
+    (function(){{
+      function pad(n){{return n<10?'0'+n:n;}}
+      function tick(){{
+        var now=new Date();
+        var utcStr=pad(now.getUTCHours())+':'+pad(now.getUTCMinutes())+':'+pad(now.getUTCSeconds());
+        var etStr=now.toLocaleTimeString('en-US',{{timeZone:'America/New_York',hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}});
+        var el=document.getElementById('utc-now');
+        var el2=document.getElementById('et-now');
+        if(el)el.innerText=utcStr;
+        if(el2)el2.innerText=etStr;
+      }}
+      tick();
+      setInterval(tick,1000);
+    }})();
+    </script>
+    """, height=56)
 
     # API status — shown after data loads
     if "dashboard_data" in st.session_state:
@@ -517,7 +581,29 @@ with st.sidebar:
             st.markdown(f"<div style='font-size:.6rem;color:{C['amber']};margin-top:2px;'>⚠ {e}</div>", unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown(f"<div style='font-size:.65rem;color:{C['muted']};'>Data: Financial Modeling Prep<br>Refresh: {MODE_CONFIG[mode]['refresh_ms']//1000}s</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-header'>SCORING WEIGHTS</div>", unsafe_allow_html=True)
+    from config import WEIGHTS
+    for cat, w in WEIGHTS.items():
+        st.markdown(f"<div style='font-size:.72rem;display:flex;justify-content:space-between;margin-bottom:4px;'><span>{cat.upper()}</span><span style='color:{C['blue']};'>{int(w*100)}%</span></div>", unsafe_allow_html=True)
+
+
+    # ── FONT SIZE (moved to bottom, compact) ─────────────────────────────────
+    st.markdown("---")
+    fs_col1, fs_col2, fs_col3, fs_col4 = st.columns([1.2, 1.2, 1, 1.5])
+    with fs_col1:
+        if st.button("A−", use_container_width=True, help="Decrease font size"):
+            st.session_state.font_scale = max(70, st.session_state.font_scale - 10)
+    with fs_col2:
+        if st.button("A+", use_container_width=True, help="Increase font size"):
+            st.session_state.font_scale = min(130, st.session_state.font_scale + 10)
+    with fs_col3:
+        if st.button("↺", use_container_width=True, help="Reset font size"):
+            st.session_state.font_scale = 75
+    with fs_col4:
+        st.markdown(f"<div style='padding-top:6px;font-size:.72rem;color:{C['muted']};'>font {st.session_state.font_scale}%</div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown(f"<div style='font-size:.65rem;color:{C['muted']};'>Data: Financial Modeling Prep<br>Refresh: {MODE_CONFIG[mode]['refresh_ms']//60000}m</div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -720,7 +806,7 @@ sizing_text = {
 h_left, h_mid, h_right = st.columns([2, 2, 3])
 
 with h_left:
-    st.markdown(f"<div class='terminal-card' style='text-align:center;padding:20px 16px;'><div class='section-header' style='text-align:center;border:none;'>TRADING DECISION {tt(TIPS['decision'])}</div><div class='badge-base {badge_cls}'>{decision}</div><div style='font-size:.72rem;color:{badge_color};letter-spacing:2px;margin-top:10px;'>{sizing_text}</div><div style='font-size:.65rem;color:{C['muted']};margin-top:8px;'>MODE: {mode.upper()} TRADING</div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='terminal-card' style='text-align:center;padding:20px 16px;'><div class='section-header' style='text-align:center;border:none;'>TRADING DECISION {tt(TIPS['decision'])}</div><div class='badge-base {badge_cls}'>{decision}</div><div style='font-size:.72rem;color:{badge_color};letter-spacing:2px;margin-top:10px;'>{sizing_text}</div><div style='font-size:.65rem;color:{C['muted']};margin-top:8px;'>SWING TRADING</div></div>", unsafe_allow_html=True)
 
 with h_mid:
     st.markdown(f"<div class='terminal-card' style='padding:8px;'><div style='font-size:.62rem;color:{C['subtext']};text-align:right;padding:2px 4px 0 0;'>{tt(TIPS['mqs'])}</div>", unsafe_allow_html=True)
@@ -945,6 +1031,6 @@ st.markdown(f"""
      font-size:.62rem;color:{C['muted']};display:flex;justify-content:space-between;'>
   <span>DATA: FINANCIAL MODELING PREP API</span>
   <span>NOT FINANCIAL ADVICE — FOR RESEARCH PURPOSES ONLY</span>
-  <span>MODE: {mode.upper()} | REFRESH: {MODE_CONFIG[mode]['refresh_ms']//1000}s</span>
+  <span>SWING MODE | REFRESH: {MODE_CONFIG[mode]['refresh_ms']//60000}m</span>
 </div>
 """, unsafe_allow_html=True)

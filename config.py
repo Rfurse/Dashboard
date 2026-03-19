@@ -64,13 +64,7 @@ MODE_CONFIG = {
         "rsi_low":  40,
         "rsi_high": 75,
         "vix_penalty_multiplier": 1.0,
-        "refresh_ms": 45_000,
-    },
-    "Day": {
-        "rsi_low":  45,
-        "rsi_high": 70,
-        "vix_penalty_multiplier": 1.3,   # harsher VIX penalty
-        "refresh_ms": 20_000,
+        "refresh_ms": 900_000,
     },
 }
 
