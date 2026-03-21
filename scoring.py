@@ -28,10 +28,12 @@ def direction_arrow(value: float | None, threshold: float = 0) -> str:
 
 def score_volatility(vix: dict, mode: str = "Swing") -> dict:
     """Score 0-100. Higher = calmer = better."""
-    level    = vix.get("level")
-    slope    = vix.get("slope")
-    pct      = vix.get("percentile_1yr")
-    mult     = MODE_CONFIG[mode]["vix_penalty_multiplier"]
+    level      = vix.get("level")
+    slope      = vix.get("slope")
+    pct        = vix.get("percentile_1yr")
+    move_level = vix.get("move_level")
+    move_pct   = vix.get("move_pct")
+    mult       = MODE_CONFIG[mode]["vix_penalty_multiplier"]
 
     base = 50
     if level is not None:
@@ -49,23 +51,30 @@ def score_volatility(vix: dict, mode: str = "Swing") -> dict:
 
     pct_adj = 0
     if pct is not None:
-        # low percentile = VIX historically calm → reward
         pct_adj = (50 - pct) * 0.2   # ±10
 
-    raw = clamp(base + slope_adj + pct_adj)
+    # MOVE penalty: elevated bond vol = stress signal (max ±8 pts)
+    move_adj = 0
+    if move_pct is not None:
+        move_adj = (50 - move_pct) * 0.16   # high MOVE pct → negative adj
+
+    raw = clamp(base + slope_adj + pct_adj + move_adj)
 
     status = "HEALTHY" if raw >= 70 else ("WEAKENING" if raw >= 45 else "RISK-OFF")
 
     return {
-        "score":      raw,
-        "status":     status,
-        "level":      level,
-        "slope":      slope,
-        "percentile": pct,
-        "label":      "VIX",
-        "value_str":  f"{level:.1f}" if level else "N/A",
-        "dir":        direction_arrow(slope, 0) if slope is not None else "→",
-        "dir_inv":    True,  # higher VIX = bad, so ↑ is red
+        "score":       raw,
+        "status":      status,
+        "level":       level,
+        "slope":       slope,
+        "percentile":  pct,
+        "move_level":  move_level,
+        "move_pct":    move_pct,
+        "move_chg":    vix.get("move_chg"),
+        "label":       "VIX",
+        "value_str":   f"{level:.1f}" if level else "N/A",
+        "dir":         direction_arrow(slope, 0) if slope is not None else "→",
+        "dir_inv":     True,
     }
 
 

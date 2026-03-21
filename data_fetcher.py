@@ -176,10 +176,30 @@ def fetch_all() -> dict:
         cur = vix_level or closes[0]
         vix_pct = float(np.mean(np.array(closes) <= cur) * 100)
 
+    # ── MOVE Index (ICE BofA bond volatility) ─────────────────────────────
+    move_q     = _quote("MOVE")
+    move_level = move_q.get("price")
+    move_chg   = move_q.get("changePercentage")
+    move_hist  = _hist("MOVE", 260)
+    # Fall back to most recent historical close if quote returns nothing
+    if move_level is None and move_hist:
+        move_level = move_hist[0].get("close")
+    if move_chg is None and move_hist and len(move_hist) >= 2:
+        prev = move_hist[1].get("close")
+        if prev and move_level:
+            move_chg = (move_level - prev) / prev * 100
+    move_pct   = None
+    if move_hist and len(move_hist) >= 2 and move_level:
+        closes_m = [h["close"] for h in move_hist]
+        move_pct = float(np.mean(np.array(closes_m) <= move_level) * 100)
+
     vix = {
         "level":          vix_level,
         "slope":          vix_slope,
         "percentile_1yr": vix_pct,
+        "move_level":     move_level,
+        "move_chg":       move_chg,
+        "move_pct":       move_pct,
     }
 
     # ── SECTORS ──────────────────────────────────────────────────────────────

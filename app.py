@@ -416,6 +416,12 @@ TIPS = {
         "Below 15: calm · 15–20: normal · 20–25: elevated · 25–30: high fear · Above 30: extreme fear.<br><br>"
         "Arrow shows 5-day slope direction. Percentile ranks today vs last 252 trading days."
     ),
+    "move": (
+        "<b>MOVE Index — ICE BofA Bond Volatility</b><br>"
+        "Measures implied volatility in US Treasury options — the bond market's equivalent of VIX.<br><br>"
+        "Elevated MOVE signals stress in the rates market, which often precedes equity volatility.<br><br>"
+        "1yr percentile ranks today's reading vs the past year. High MOVE applies a small penalty to the Volatility score."
+    ),
     "regime": (
         "<b>Market Regime</b><br>"
         "UPTREND: SPY above both 50d and 200d SMA — favours longs.<br>"
@@ -860,9 +866,26 @@ for i, key in enumerate(panels):
 
         # Extra stats per panel
         if key == "volatility":
-            pct = c.get("percentile")
-            slp = c.get("slope")
-            st.markdown(f"<div style='font-size:.67rem;color:{C['subtext']};margin-top:6px;padding:0 4px;'>1yr pct: {fmt(pct, '.0f')}% {tt(TIPS['vix'])}<br>5d slope: {fmt(slp, '+.2f')}</div>", unsafe_allow_html=True)
+            pct       = c.get("percentile")
+            slp       = c.get("slope")
+            move_lvl  = c.get("move_level")
+            move_pct  = c.get("move_pct")
+            move_chg  = c.get("move_chg")
+            move_chg_str = f" ({move_chg:+.1f}%)" if move_chg is not None else ""
+            move_color   = C["red"] if (move_pct or 0) > 75 else (C["amber"] if (move_pct or 0) > 50 else C["green"])
+            st.markdown(
+                f"<div style='font-size:.67rem;color:{C['subtext']};margin-top:6px;padding:0 4px;'>"
+                f"VIX 1yr pct: {fmt(pct, '.0f')}% {tt(TIPS['vix'])}<br>"
+                f"5d slope: {fmt(slp, '+.2f')}<br>"
+                f"<span style='color:{C['subtext']};'>MOVE close: </span>"
+                f"<span style='color:{move_color};font-weight:700;'>{fmt(move_lvl, '.2f')}</span>"
+                f" {tt(TIPS['move'])}<br>"
+                f"<span style='color:{C['subtext']};'>MOVE chg: </span>"
+                f"<span style='color:{move_color};'>{move_chg_str.strip() if move_chg_str else 'N/A'}</span><br>"
+                f"<span style='color:{C['subtext']};'>MOVE 1yr pct: {fmt(move_pct, '.0f')}%</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
         elif key == "trend":
             rsi  = c.get("rsi")
