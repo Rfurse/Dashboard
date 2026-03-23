@@ -35,12 +35,13 @@ C = COLORS
 
 st.markdown(f"""
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
   html, body, [class*="css"] {{
-    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     background-color: {C['bg']} !important;
     color: {C['text']} !important;
+    -webkit-font-smoothing: antialiased;
   }}
 
   /* Hide Streamlit chrome + sidebar collapse arrow */
@@ -73,57 +74,77 @@ st.markdown(f"""
   [role="tooltip"] {{ display: none !important; }}
 
   /* Scrollbar */
-  ::-webkit-scrollbar {{ width: 4px; }}
+  ::-webkit-scrollbar {{ width: 3px; }}
   ::-webkit-scrollbar-track {{ background: {C['bg']}; }}
-  ::-webkit-scrollbar-thumb {{ background: {C['border']}; }}
+  ::-webkit-scrollbar-thumb {{ background: {C['border']}; border-radius: 2px; }}
+  ::-webkit-scrollbar-thumb:hover {{ background: {C['border2']}; }}
 
-  /* Card panels */
+  /* Card panels — glassmorphism */
   .terminal-card {{
     background: {C['surface']};
     border: 1px solid {C['border']};
-    border-radius: 4px;
-    padding: 14px 16px;
-    margin-bottom: 8px;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
     height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }}
-  .terminal-card:hover {{ border-color: {C['blue']}44; }}
+  .terminal-card::before {{
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(6,182,212,0.15), transparent);
+    pointer-events: none;
+  }}
+  .terminal-card:hover {{
+    border-color: rgba(6,182,212,0.25);
+    box-shadow: 0 0 20px rgba(6,182,212,0.04), 0 4px 24px rgba(0,0,0,0.4);
+  }}
 
   /* Decision badge */
-  .badge-yes     {{ color:{C['green']}; border:2px solid {C['green']}; }}
-  .badge-caution {{ color:{C['amber']}; border:2px solid {C['amber']}; }}
-  .badge-no      {{ color:{C['red']};   border:2px solid {C['red']};   }}
+  .badge-yes     {{ color:{C['green']}; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); }}
+  .badge-caution {{ color:{C['amber']}; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); }}
+  .badge-no      {{ color:{C['red']};   background:rgba(239,68,68,0.08);  border:1px solid rgba(239,68,68,0.3);  }}
   .badge-base {{
     text-align: center;
-    font-size: 3.5rem;
-    font-weight: 900;
-    letter-spacing: 6px;
-    padding: 18px 30px;
-    border-radius: 6px;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace !important;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    padding: 20px 24px;
+    border-radius: 10px;
     display: inline-block;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 12px;
   }}
 
   /* Status labels */
-  .label-healthy  {{ color:{C['green']}; font-size:.7rem; letter-spacing:2px; }}
-  .label-weakening{{ color:{C['amber']}; font-size:.7rem; letter-spacing:2px; }}
-  .label-risk-off {{ color:{C['red']};   font-size:.7rem; letter-spacing:2px; }}
-  .label-active   {{ color:{C['green']}; font-size:.7rem; letter-spacing:2px; }}
-  .label-mixed    {{ color:{C['amber']}; font-size:.7rem; letter-spacing:2px; }}
-  .label-broken   {{ color:{C['red']};   font-size:.7rem; letter-spacing:2px; }}
-  .label-unknown  {{ color:{C['muted']}; font-size:.7rem; letter-spacing:2px; }}
+  .label-healthy  {{ color:{C['green']}; font-size:.68rem; font-weight:600; letter-spacing:1.5px; }}
+  .label-weakening{{ color:{C['amber']}; font-size:.68rem; font-weight:600; letter-spacing:1.5px; }}
+  .label-risk-off {{ color:{C['red']};   font-size:.68rem; font-weight:600; letter-spacing:1.5px; }}
+  .label-active   {{ color:{C['green']}; font-size:.68rem; font-weight:600; letter-spacing:1.5px; }}
+  .label-mixed    {{ color:{C['amber']}; font-size:.68rem; font-weight:600; letter-spacing:1.5px; }}
+  .label-broken   {{ color:{C['red']};   font-size:.68rem; font-weight:600; letter-spacing:1.5px; }}
+  .label-unknown  {{ color:{C['muted']}; font-size:.68rem; font-weight:600; letter-spacing:1.5px; }}
 
   /* Metric values */
   .metric-val {{
-    font-size: 1.6rem;
-    font-weight: 700;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace !important;
+    font-size: 1.7rem;
+    font-weight: 600;
     line-height: 1.1;
-    margin: 4px 0;
+    margin: 6px 0 2px 0;
+    letter-spacing: -0.5px;
   }}
   .metric-sub {{
+    font-family: 'Inter', sans-serif;
     font-size: .72rem;
     color: {C['subtext']};
-    margin-top: 2px;
+    margin-top: 3px;
+    font-weight: 400;
   }}
   .metric-dir-up   {{ color:{C['green']}; }}
   .metric-dir-down {{ color:{C['red']};   }}
@@ -131,35 +152,70 @@ st.markdown(f"""
 
   /* Section headers */
   .section-header {{
-    font-size: .65rem;
-    letter-spacing: 3px;
+    font-family: 'Inter', sans-serif;
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: 2px;
     color: {C['subtext']};
     border-bottom: 1px solid {C['border']};
-    padding-bottom: 4px;
-    margin-bottom: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
     text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }}
+  .section-header::before {{
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 12px;
+    background: {C['cyan']};
+    border-radius: 2px;
+    flex-shrink: 0;
   }}
 
   /* Score bar */
   .score-bar-wrap {{
     background: {C['border']};
-    border-radius: 2px;
-    height: 4px;
-    margin-top: 6px;
+    border-radius: 4px;
+    height: 5px;
+    margin-top: 8px;
+    overflow: hidden;
   }}
   .score-bar-fill {{
-    height: 4px;
-    border-radius: 2px;
-    transition: width .5s;
+    height: 5px;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }}
 
   /* Ticker tape */
   .ticker-wrap {{
     background: {C['surface']};
     border-bottom: 1px solid {C['border']};
-    padding: 6px 0;
+    border-top: 1px solid {C['border']};
+    padding: 8px 0;
     overflow: hidden;
     white-space: nowrap;
+    position: relative;
+  }}
+  .ticker-wrap::before {{
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 60px;
+    background: linear-gradient(90deg, {C['surface']}, transparent);
+    pointer-events: none;
+    z-index: 2;
+  }}
+  .ticker-wrap::after {{
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 60px;
+    background: linear-gradient(270deg, {C['surface']}, transparent);
+    pointer-events: none;
+    z-index: 2;
   }}
   .ticker-inner {{
     display: inline-block;
@@ -170,9 +226,11 @@ st.markdown(f"""
     100% {{ transform: translateX(-50%); }}
   }}
   .ticker-item {{
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
     display: inline-block;
-    margin: 0 20px;
-    font-size: .78rem;
+    margin: 0 24px;
+    font-size: .8rem;
+    font-weight: 500;
   }}
   .ticker-up   {{ color: {C['green']}; }}
   .ticker-down {{ color: {C['red']};   }}
@@ -183,47 +241,76 @@ st.markdown(f"""
     background: {C['surface']};
     border-top: 1px solid {C['border']};
     border-bottom: 1px solid {C['border']};
-    padding: 7px 0;
+    padding: 8px 0;
     overflow: hidden;
     white-space: nowrap;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+    position: relative;
+  }}
+  .news-ticker-wrap::before {{
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 60px;
+    background: linear-gradient(90deg, {C['surface']}, transparent);
+    pointer-events: none;
+    z-index: 2;
+  }}
+  .news-ticker-wrap::after {{
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 60px;
+    background: linear-gradient(270deg, {C['surface']}, transparent);
+    pointer-events: none;
+    z-index: 2;
   }}
   .news-ticker-inner {{
     display: inline-block;
     animation: scroll-left 80s linear infinite;
   }}
   .news-ticker-item {{
+    font-family: 'Inter', sans-serif;
     display: inline-block;
-    margin: 0 40px;
-    font-size: .78rem;
+    margin: 0 48px;
+    font-size: .76rem;
     color: {C['text']};
-    letter-spacing: .5px;
+    letter-spacing: 0;
     text-decoration: none;
+    font-weight: 400;
   }}
   a.news-ticker-item:hover {{
-    color: {C['amber']};
+    color: {C['cyan']};
     text-decoration: underline;
+    text-underline-offset: 2px;
   }}
   .news-ticker-sep {{
-    color: {C['amber']};
+    color: {C['cyan']};
     margin: 0 8px;
+    opacity: 0.6;
   }}
 
   /* Analysis box */
   .analysis-box {{
     background: {C['surface']};
     border: 1px solid {C['border']};
-    border-left: 3px solid {C['blue']};
-    border-radius: 4px;
-    padding: 14px 18px;
-    font-size: .85rem;
-    line-height: 1.6;
+    border-left: 3px solid {C['cyan']};
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: .86rem;
+    line-height: 1.7;
     color: {C['text']};
     margin-top: 4px;
   }}
   .analysis-label {{
-    font-size:.6rem; letter-spacing:3px; color:{C['blue']};
-    margin-bottom:6px; text-transform:uppercase;
+    font-family: 'Inter', sans-serif;
+    font-size: .62rem;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    color: {C['cyan']};
+    margin-bottom: 8px;
+    text-transform: uppercase;
   }}
 
   /* Sidebar */
@@ -232,7 +319,7 @@ st.markdown(f"""
     border-right: 1px solid {C['border']};
   }}
   [data-testid="stSidebar"] * {{
-    font-family: 'Share Tech Mono', monospace !important;
+    font-family: 'Inter', sans-serif !important;
     color: {C['text']} !important;
   }}
 
@@ -248,30 +335,39 @@ st.markdown(f"""
     width: 100%;
     border-collapse: collapse;
     font-size: .78rem;
+    font-family: 'Inter', sans-serif;
   }}
   .breakdown-table th {{
-    color: {C['subtext']};
+    color: {C['muted']};
     font-size: .62rem;
-    letter-spacing: 2px;
-    padding: 4px 8px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    padding: 6px 8px;
     border-bottom: 1px solid {C['border']};
     text-align: left;
+    text-transform: uppercase;
   }}
   .breakdown-table td {{
-    padding: 6px 8px;
-    border-bottom: 1px solid {C['border']}44;
+    padding: 8px 8px;
+    border-bottom: 1px solid rgba(31,41,55,0.6);
+  }}
+  .breakdown-table td:nth-child(3),
+  .breakdown-table td:nth-child(5) {{
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    font-weight: 600;
   }}
   .live-dot {{
     display: inline-block;
-    width: 8px; height: 8px;
+    width: 7px; height: 7px;
     background: {C['green']};
     border-radius: 50%;
     margin-right: 6px;
-    animation: pulse 1.5s ease-in-out infinite;
+    animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 6px rgba(16,185,129,0.5);
   }}
   @keyframes pulse {{
-    0%, 100% {{ opacity:1; }}
-    50%       {{ opacity:.3; }}
+    0%, 100% {{ opacity:1; transform:scale(1); }}
+    50%       {{ opacity:.4; transform:scale(0.9); }}
   }}
 
   /* ── Tooltip system ── */
@@ -286,37 +382,42 @@ st.markdown(f"""
     justify-content: center;
     width: 14px;
     height: 14px;
-    border: 1px solid {C['blue']};
+    border: 1px solid rgba(6,182,212,0.4);
     border-radius: 50%;
-    color: {C['blue']};
-    font-size: .58rem;
-    font-weight: 700;
+    color: {C['cyan']};
+    font-size: .56rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
     margin-left: 5px;
     vertical-align: middle;
     line-height: 1;
     flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.15s;
   }}
+  .tt:hover .tt-icon {{ opacity: 1; }}
   .tt-box {{
     visibility: hidden;
     opacity: 0;
-    background: #0d1b33;
+    background: {C['surface2']};
     color: {C['text']};
-    border: 1px solid {C['blue']};
-    border-radius: 4px;
-    padding: 9px 12px;
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
     position: absolute;
     z-index: 9999;
     width: 260px;
     left: 22px;
     top: -4px;
+    font-family: 'Inter', sans-serif;
     font-size: .72rem;
-    line-height: 1.55;
+    line-height: 1.6;
     pointer-events: none;
     transition: opacity .15s ease;
     white-space: normal;
-    box-shadow: 0 4px 16px rgba(0,0,0,.6);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(6,182,212,0.05);
   }}
-  .tt-box b {{ color: {C['blue']}; }}
+  .tt-box b {{ color: {C['cyan']}; }}
   .tt:hover .tt-box {{
     visibility: visible;
     opacity: 1;
@@ -519,20 +620,20 @@ with st.sidebar:
         <!-- Area fill under line -->
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="{C['green']}" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="{C['green']}" stop-opacity="0"/>
+            <stop offset="0%" stop-color="{C['cyan']}" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="{C['cyan']}" stop-opacity="0"/>
           </linearGradient>
         </defs>
         <polygon points="0,52 20,48 38,44 55,46 70,36 85,30 100,34 112,22 125,18 138,24 150,14 162,20 175,10 190,6 200,8 200,64 0,64"
           fill="url(#areaGrad)"/>
         <!-- Price line -->
         <polyline points="0,52 20,48 38,44 55,46 70,36 85,30 100,34 112,22 125,18 138,24 150,14 162,20 175,10 190,6 200,8"
-          fill="none" stroke="{C['green']}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+          fill="none" stroke="{C['cyan']}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
         <!-- Glowing end dot -->
-        <circle cx="200" cy="8" r="3.5" fill="{C['green']}" opacity="0.9"/>
-        <circle cx="200" cy="8" r="6" fill="{C['green']}" opacity="0.2"/>
+        <circle cx="200" cy="8" r="3.5" fill="{C['cyan']}" opacity="0.9"/>
+        <circle cx="200" cy="8" r="6" fill="{C['cyan']}" opacity="0.2"/>
         <!-- Label -->
-        <text x="6" y="62" font-family="Share Tech Mono, Courier New, monospace"
+        <text x="6" y="62" font-family="Inter, sans-serif"
           font-size="9" fill="{C['subtext']}" letter-spacing="2">SHOULD I BE TRADING</text>
       </svg>
     </div>
@@ -569,7 +670,7 @@ with st.sidebar:
             st.rerun()
     import streamlit.components.v1 as _cv1
     _cv1.html(f"""
-    <div id="tz-clock" style="font-family:'Share Tech Mono',monospace;font-size:.72rem;color:{C['subtext']};margin-top:6px;line-height:1.7;">
+    <div id="tz-clock" style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:{C['subtext']};margin-top:6px;line-height:1.7;">
       <div>NOW (ET) &nbsp;&nbsp;<span id="et-now" style="color:{C['text']};"></span></div>
       <div>NOW (UTC) &nbsp;<span id="utc-now" style="color:{C['text']};"></span></div>
     </div>
@@ -609,7 +710,7 @@ with st.sidebar:
     st.markdown(f"<div class='section-header'>SCORING WEIGHTS</div>", unsafe_allow_html=True)
     from config import WEIGHTS
     for cat, w in WEIGHTS.items():
-        st.markdown(f"<div style='font-size:.72rem;display:flex;justify-content:space-between;margin-bottom:4px;'><span>{cat.upper()}</span><span style='color:{C['blue']};'>{int(w*100)}%</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:.72rem;display:flex;justify-content:space-between;margin-bottom:4px;'><span>{cat.upper()}</span><span style='color:{C['cyan']};font-family:IBM Plex Mono,monospace;'>{int(w*100)}%</span></div>", unsafe_allow_html=True)
 
 
     # ── FONT SIZE (moved to bottom, compact) ─────────────────────────────────
@@ -672,7 +773,7 @@ def score_color(s: float) -> str:
 
 def status_html(status: str) -> str:
     cls = f"label-{status.lower().replace(' ', '-')}"
-    return f"<span class='{cls}'>◆ {status}</span>"
+    return f"<span class='{cls}'>● {status}</span>"
 
 
 def dir_class(arrow: str, inv: bool = False) -> str:
@@ -702,22 +803,22 @@ def gauge_chart(score: float, label: str, size: int = 220) -> go.Figure:
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=score,
-        number={"font": {"color": color, "size": 32, "family": "Courier New"}, "suffix": "%"},
-        title={"text": label, "font": {"color": C["subtext"], "size": 11, "family": "Courier New"}},
+        number={"font": {"color": color, "size": 30, "family": "IBM Plex Mono, Courier New"}, "suffix": "%"},
+        title={"text": label, "font": {"color": C["subtext"], "size": 10, "family": "Inter, sans-serif"}},
         gauge={
             "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": C["muted"],
-                     "tickfont": {"color": C["muted"], "size": 9}},
-            "bar":  {"color": color, "thickness": 0.25},
-            "bgcolor": C["surface"],
+                     "tickfont": {"color": C["muted"], "size": 9, "family": "Inter, sans-serif"}},
+            "bar":  {"color": color, "thickness": 0.22},
+            "bgcolor": "rgba(0,0,0,0)",
             "borderwidth": 0,
             "steps": [
-                {"range": [0,  60], "color": "#1a0a0a"},
-                {"range": [60, 80], "color": "#1a1500"},
-                {"range": [80, 100], "color": "#0a1a0a"},
+                {"range": [0,  60], "color": C["zone_red"]},
+                {"range": [60, 80], "color": C["zone_amber"]},
+                {"range": [80, 100], "color": C["zone_green"]},
             ],
             "threshold": {
-                "line": {"color": color, "width": 3},
-                "thickness": 0.75,
+                "line": {"color": color, "width": 2},
+                "thickness": 0.7,
                 "value": score,
             },
         },
@@ -726,7 +827,7 @@ def gauge_chart(score: float, label: str, size: int = 220) -> go.Figure:
         height=size, margin=dict(l=20, r=20, t=30, b=10),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Courier New", "color": C["text"]},
+        font={"family": "Inter, sans-serif", "color": C["text"]},
     )
     return fig
 
@@ -741,7 +842,7 @@ _errs = data.get("errors", [])
 _spy_price = data.get("spy", {}).get("price")
 if _spy_price is None:
     _diag_err = _last_quote_error[0] or (_errs[0] if _errs else "Unknown — check FMP_API_KEY in .env")
-    st.markdown(f"<div style='background:#1a0a0a;border:1px solid {C['red']};border-radius:4px;padding:8px 14px;font-size:.75rem;color:{C['red']};margin-bottom:6px;'>⚠ API data unavailable — {_diag_err}<br><span style='color:{C['muted']};'>Ensure FMP_API_KEY is set in dashboard/.env and restart: <code style='color:{C['amber']};'>streamlit run app.py</code></span></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='background:{C['zone_red']};border:1px solid {C['red']};border-radius:10px;padding:8px 14px;font-size:.75rem;color:{C['red']};margin-bottom:6px;'>⚠ API data unavailable — {_diag_err}<br><span style='color:{C['muted']};'>Ensure FMP_API_KEY is set in dashboard/.env and restart: <code style='color:{C['amber']};'>streamlit run app.py</code></span></div>", unsafe_allow_html=True)
 
 # Build ticker
 spy_q   = data.get("spy", {})
@@ -794,7 +895,7 @@ st.markdown("<div style='margin-bottom:6px;'></div>", unsafe_allow_html=True)
 
 headlines = data.get("headlines", [])
 if headlines:
-    sep = "<span class='news-ticker-sep'>◆</span>"
+    sep = "<span class='news-ticker-sep'>·</span>"
     parts = []
     for h in headlines:
         t, u = h.get("title", ""), h.get("url", "")
@@ -833,7 +934,7 @@ sizing_text = {
 h_left, h_mid, h_right = st.columns([2, 2, 3])
 
 with h_left:
-    st.markdown(f"<div class='terminal-card' style='text-align:center;padding:20px 16px;'><div class='section-header' style='text-align:center;border:none;'>TRADING DECISION {tt(TIPS['decision'])}</div><div class='badge-base {badge_cls}'>{decision}</div><div style='font-size:.72rem;color:{badge_color};letter-spacing:2px;margin-top:10px;'>{sizing_text}</div><div style='font-size:.65rem;color:{C['muted']};margin-top:8px;'>SWING TRADING</div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='terminal-card' style='text-align:center;padding:20px 16px;border-top:2px solid {badge_color};'><div class='section-header' style='text-align:center;border:none;justify-content:center;'>TRADING DECISION {tt(TIPS['decision'])}</div><div class='badge-base {badge_cls}'>{decision}</div><div style='font-size:.72rem;color:{badge_color};letter-spacing:2px;margin-top:10px;font-family:Inter,sans-serif;font-weight:600;'>{sizing_text}</div><div style='font-size:.65rem;color:{C['muted']};margin-top:8px;'>SWING TRADING</div></div>", unsafe_allow_html=True)
 
 with h_mid:
     st.markdown(f"<div class='terminal-card' style='padding:8px;'><div style='font-size:.62rem;color:{C['subtext']};text-align:right;padding:2px 4px 0 0;'>{tt(TIPS['mqs'])}</div>", unsafe_allow_html=True)
@@ -846,7 +947,7 @@ with h_right:
 
     ew_status = ew["status"]
     ew_color  = C["green"] if ew_status == "ACTIVE" else (C["amber"] if ew_status == "MIXED" else C["red"])
-    st.markdown(f"<div style='font-size:.72rem;padding:0 8px 8px 8px;'><div class='analysis-label'>EXECUTION STATUS</div><div style='color:{ew_color};font-size:.8rem;'>◆ {ew_status}</div><div class='metric-sub' style='margin-top:4px;'>{'✓' if ew['breakout_health'] > 0.6 else '✗'} Breakouts holding &nbsp; {'✓' if ew['follow_through'] else '✗'} Follow-through &nbsp; {'✓' if ew['pullback_buying'] else '✗'} Dips bought</div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size:.72rem;padding:0 8px 8px 8px;'><div class='analysis-label'>EXECUTION STATUS</div><div style='color:{ew_color};font-size:.8rem;font-weight:600;'>● {ew_status}</div><div class='metric-sub' style='margin-top:4px;'>{'✓' if ew['breakout_health'] > 0.6 else '✗'} Breakouts holding &nbsp; {'✓' if ew['follow_through'] else '✗'} Follow-through &nbsp; {'✓' if ew['pullback_buying'] else '✗'} Dips bought</div></div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -988,7 +1089,7 @@ fig_hmap.add_trace(go.Bar(
     marker_opacity=1.0,
     text=text_labels,
     textposition="outside",
-    textfont={"size": 12, "color": C["text"], "family": "Share Tech Mono, Courier New, monospace"},
+    textfont={"size": 12, "color": C["text"], "family": "IBM Plex Mono, Courier New, monospace"},
     hovertemplate="<b>%{y}</b><br>Return: %{x:.2f}%<extra></extra>",
     name="Return",
 ))
@@ -998,7 +1099,7 @@ fig_hmap.update_layout(
     margin=dict(l=360, r=100, t=10, b=20),
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font={"family": "Share Tech Mono, Courier New, monospace", "color": C["text"], "size": 12},
+    font={"family": "IBM Plex Mono, Courier New, monospace", "color": C["text"], "size": 12},
     xaxis=dict(
         gridcolor=C["border"],
         zerolinecolor=C["muted"],
@@ -1033,7 +1134,7 @@ with bd_cols[0]:
         s   = c["score"]
         contrib = s * w
         color = score_color(s)
-        bar = f"<div style='background:{C['border']};border-radius:2px;height:4px;width:100%;'><div style='background:{color};height:4px;border-radius:2px;width:{s}%;'></div></div>"
+        bar = f"<div style='background:{C['border']};border-radius:4px;height:5px;width:100%;overflow:hidden;'><div style='background:{color};height:5px;border-radius:4px;width:{s}%;'></div></div>"
         rows += f"<tr><td>{panel_labels[key]}</td><td style='color:{C['subtext']};'>{int(w*100)}%</td><td style='color:{color};font-weight:700;'>{s:.0f}</td><td style='width:120px;'>{bar}</td><td style='color:{C['subtext']};'>{contrib:.1f}</td></tr>"
     mqs_color = score_color(mqs)
     table_html = (
@@ -1056,10 +1157,10 @@ with bd_cols[1]:
     fig_pie = go.Figure(go.Pie(
         labels=contrib_labels,
         values=contrib_vals,
-        hole=0.6,
-        marker=dict(colors=contrib_colors, line=dict(color=C["bg"], width=2)),
+        hole=0.65,
+        marker=dict(colors=contrib_colors, line=dict(color=C["bg"], width=3)),
         textinfo="label+percent",
-        textfont={"size": 9, "family": "Courier New"},
+        textfont={"size": 9, "family": "IBM Plex Mono, Courier New"},
         hovertemplate="<b>%{label}</b><br>Contribution: %{value:.1f}<extra></extra>",
     ))
     fig_pie.update_layout(
@@ -1067,12 +1168,12 @@ with bd_cols[1]:
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Courier New", "color": C["text"], "size": 9},
+        font={"family": "IBM Plex Mono, Courier New", "color": C["text"], "size": 9},
         showlegend=False,
         annotations=[dict(
             text=f"<b>{mqs:.0f}</b>",
             x=0.5, y=0.5, showarrow=False,
-            font={"size": 26, "color": score_color(mqs), "family": "Courier New"},
+            font={"size": 28, "color": score_color(mqs), "family": "IBM Plex Mono, Courier New"},
         )],
     )
     st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
