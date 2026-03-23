@@ -8,9 +8,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def _get_secret(key: str, default: str = "") -> str:
+    """Check os.getenv first, then st.secrets (Streamlit Cloud)."""
+    val = os.getenv(key)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        return st.secrets.get(key, default)
+    except Exception:
+        return default
+
 # ── API ──────────────────────────────────────────────────────────────────────
-FMP_API_KEY = os.getenv("FMP_API_KEY", "demo")
-MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY", "")
+FMP_API_KEY = _get_secret("FMP_API_KEY", "demo")
+MARKETAUX_API_KEY = _get_secret("MARKETAUX_API_KEY", "")
 
 # ── Symbols ───────────────────────────────────────────────────────────────────
 SECTOR_ETFS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC"]
