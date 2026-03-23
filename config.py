@@ -10,6 +10,7 @@ load_dotenv()
 
 # ── API ──────────────────────────────────────────────────────────────────────
 FMP_API_KEY = os.getenv("FMP_API_KEY", "demo")
+MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY", "")
 
 # ── Symbols ───────────────────────────────────────────────────────────────────
 SECTOR_ETFS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC"]

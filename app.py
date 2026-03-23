@@ -178,16 +178,35 @@ st.markdown(f"""
   .ticker-down {{ color: {C['red']};   }}
   .ticker-flat {{ color: {C['subtext']}; }}
 
-  /* Alert banner */
-  .alert-banner {{
-    background: #2d1a00;
-    border: 1px solid {C['amber']};
-    border-radius: 4px;
-    padding: 10px 16px;
-    color: {C['amber']};
-    font-size: .85rem;
+  /* News headline ticker */
+  .news-ticker-wrap {{
+    background: {C['surface']};
+    border-top: 1px solid {C['border']};
+    border-bottom: 1px solid {C['border']};
+    padding: 7px 0;
+    overflow: hidden;
+    white-space: nowrap;
     margin-bottom: 12px;
-    letter-spacing: 1px;
+  }}
+  .news-ticker-inner {{
+    display: inline-block;
+    animation: scroll-left 80s linear infinite;
+  }}
+  .news-ticker-item {{
+    display: inline-block;
+    margin: 0 40px;
+    font-size: .78rem;
+    color: {C['text']};
+    letter-spacing: .5px;
+    text-decoration: none;
+  }}
+  a.news-ticker-item:hover {{
+    color: {C['amber']};
+    text-decoration: underline;
+  }}
+  .news-ticker-sep {{
+    color: {C['amber']};
+    margin: 0 8px;
   }}
 
   /* Analysis box */
@@ -770,17 +789,19 @@ st.markdown(f"<div class='analysis-box' style='margin:8px 0;'><div class='analys
 st.markdown("<div style='margin-bottom:6px;'></div>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FOMC ALERT BANNER
+# NEWS HEADLINE TICKER
 # ─────────────────────────────────────────────────────────────────────────────
 
-fomc = data.get("fomc", {})
-if fomc.get("hours_until") is not None:
-    hrs = fomc["hours_until"]
-    name = fomc.get("event_name", "FOMC Event")
-    st.markdown(f"""
-    <div class='alert-banner'>
-      ⚠  {name.upper()} IN {hrs:.0f} HOURS — Expect elevated volatility. Reduce position sizing.
-    </div>""", unsafe_allow_html=True)
+headlines = data.get("headlines", [])
+if headlines:
+    sep = "<span class='news-ticker-sep'>◆</span>"
+    parts = []
+    for h in headlines:
+        t, u = h.get("title", ""), h.get("url", "")
+        parts.append(f"<a class='news-ticker-item' href='{u}' target='_blank'>{t}</a>" if u else f"<span class='news-ticker-item'>{t}</span>")
+    items_html = sep.join(parts)
+    doubled = items_html + sep + items_html  # duplicate for seamless loop
+    st.markdown(f"<div class='news-ticker-wrap'><div class='news-ticker-inner'>{doubled}</div></div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -919,21 +940,31 @@ st.markdown("<div style='margin-bottom:10px;'></div>", unsafe_allow_html=True)
 # SECTOR HEATMAP
 # ─────────────────────────────────────────────────────────────────────────────
 
-st.markdown("<div class='section-header'>SECTOR HEATMAP — 5D PERFORMANCE</div>", unsafe_allow_html=True)
+hmap_cols = st.columns([6, 1])
+with hmap_cols[0]:
+    hmap_period = st.radio("", ["1D", "5D"], horizontal=True, key="hmap_period", label_visibility="collapsed")
+with hmap_cols[1]:
+    st.markdown("")  # spacer
+
+st.markdown(f"<div class='section-header'>SECTOR HEATMAP — {hmap_period} PERFORMANCE</div>", unsafe_allow_html=True)
 
 sec_data = data.get("sectors", {})
 hmap_items = []
 for sym in SECTOR_ETFS:
     v = sec_data.get(sym, {})
-    r5  = v.get("return_5d")
-    r1  = v.get("change_1d")
-    src = v.get("data_source", "1d")
-    val = r5 if r5 is not None else (r1 if r1 is not None else 0.001)  # 0.001 keeps bar visible
+    r5    = v.get("return_5d")
+    r1    = v.get("change_1d")
+    price = v.get("price")
+    if hmap_period == "1D":
+        val = r1 if r1 is not None else 0.001
+    else:
+        src = v.get("data_source", "1d")
+        val = r5 if r5 is not None else (r1 if r1 is not None else 0.001)
     hmap_items.append({
         "sym":    sym,
         "name":   SECTOR_NAMES.get(sym, sym),
         "val":    val,
-        "source": src,
+        "price":  price,
     })
 
 hmap_items.sort(key=lambda x: x["val"], reverse=True)
@@ -942,7 +973,9 @@ vals   = [x["val"]  for x in hmap_items]
 labels = [f"{x['sym']} ({x['name']})" for x in hmap_items]
 colors = [C["green"] if v >= 0 else C["red"] for v in vals]
 text_labels = [
-    f"{x['val']:+.2f}% {'(1d)' if x['source'] == '1d' else ''}"
+    f"${x['price']:.2f}  {x['val']:+.2f}%"
+    if x["price"] is not None else
+    f"{x['val']:+.2f}%"
     for x in hmap_items
 ]
 
@@ -952,7 +985,7 @@ fig_hmap.add_trace(go.Bar(
     y=labels,
     orientation="h",
     marker_color=colors,
-    marker_opacity=[1.0 if x["source"] == "5d" else 0.6 for x in hmap_items],
+    marker_opacity=1.0,
     text=text_labels,
     textposition="outside",
     textfont={"size": 12, "color": C["text"], "family": "Share Tech Mono, Courier New, monospace"},

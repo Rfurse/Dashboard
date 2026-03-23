@@ -266,10 +266,13 @@ def fetch_all() -> dict:
     })
     fomc = {"hours_until": None, "event_name": None}
     if isinstance(cal_data, list):
-        keywords = ["fed", "fomc", "federal reserve", "rate decision", "federal funds"]
+        keywords = ["fomc", "federal funds rate"]
         now = datetime.utcnow()
         for ev in cal_data:
             name = (ev.get("event") or "").lower()
+            country = (ev.get("country") or "").upper()
+            if country and country != "US":
+                continue
             if not any(k in name for k in keywords):
                 continue
             dt_str = ev.get("date") or ""
@@ -294,6 +297,34 @@ def fetch_all() -> dict:
         "ratio":   g / (g + l) if (g + l) > 0 else None,
     }
 
+    # ── NEWS HEADLINES (MarketAux — free plan: 3 per page, paginate to get more)
+    headlines = []
+    try:
+        from config import MARKETAUX_API_KEY
+        seen = set()
+        for page in range(1, 6):  # up to 5 pages = ~15 headlines
+            ma_params = {
+                "api_token": MARKETAUX_API_KEY,
+                "countries": "us",
+                "limit": 3,
+                "page": page,
+                "published_after": str(today - timedelta(days=1)) + "T00:00",
+            }
+            mr = requests.get("https://api.marketaux.com/v1/news/all", params=ma_params, timeout=8)
+            mr.raise_for_status()
+            ma_json = mr.json()
+            items = ma_json.get("data", [])
+            if not items:
+                break
+            for item in items:
+                title = (item.get("title") or "").strip()
+                url   = (item.get("url") or "").strip()
+                if title and title not in seen:
+                    seen.add(title)
+                    headlines.append({"title": title, "url": url})
+    except Exception as e:
+        errors.append(f"News: {e}")
+
     return {
         "spy":        spy,
         "qqq":        qqq,
@@ -303,6 +334,7 @@ def fetch_all() -> dict:
         "eurusd":     eurusd,
         "fomc":       fomc,
         "breadth":    breadth,
+        "headlines":  headlines,
         "fetched_at": datetime.utcnow(),
         "errors":     errors,
         "api_ok":     spy_price is not None,
